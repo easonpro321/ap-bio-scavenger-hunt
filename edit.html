@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editor · Biology Term Scavenger Hunt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@400;600&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#DCE3D5; --sheet:#FAFBF7; --ink:#1C2620; --ink-soft:#5D6A59;
+  --ink-faint:#93A08D; --rule:#BCC7B3; --stamp:#6A4A87; --warn:#8C4A2F;
+  --sheet-shadow:0 1px 0 #C6D0BD, 0 10px 22px -14px rgba(28,38,32,.5);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:"Spectral",Georgia,serif;font-weight:300;line-height:1.6}
+
+.bar{position:sticky;top:0;z-index:40;background:var(--paper);
+  border-bottom:1px solid var(--rule);padding:14px 24px}
+.bar-in{max-width:1180px;margin:0 auto;display:flex;flex-wrap:wrap;
+  align-items:center;gap:12px}
+.bar h1{font-size:1.15rem;font-weight:400;margin:0;flex:1;white-space:nowrap}
+.bar .count{font-family:"Archivo Narrow",Arial,sans-serif;font-size:.9rem;color:var(--ink-soft)}
+
+button{font-family:"Archivo Narrow",Arial,sans-serif;font-size:.9rem;
+  border:1px solid var(--rule);background:transparent;color:var(--ink-soft);
+  border-radius:2px;padding:6px 12px;cursor:pointer}
+button:hover{color:var(--ink);border-color:var(--ink-faint)}
+button.primary{background:var(--ink);border-color:var(--ink);color:var(--sheet)}
+button.primary:hover{background:#2B3A31;color:var(--sheet)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,
+.sheet:focus-visible{outline:2px solid var(--stamp);outline-offset:2px}
+
+.note{max-width:74ch;margin:0 auto;padding:16px 24px 0;
+  font-size:.9rem;color:var(--ink-soft)}
+
+.fail{max-width:74ch;margin:26px auto;padding:16px 20px;background:#F6E9E4;
+  border:1px solid #D8B7A8;color:#6E3A24;font-size:.95rem;display:none}
+.fail.show{display:block}
+.fail code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+
+main{max-width:1180px;margin:0 auto;padding:22px 24px 90px}
+.unit-head{display:flex;align-items:baseline;gap:12px;margin:36px 0 14px}
+.unit-head h2{font-size:1.18rem;font-weight:400;margin:0;white-space:nowrap}
+.unit-head .line{flex:1;height:1px;background:var(--rule)}
+.unit-head .n{font-family:"Archivo Narrow",Arial,sans-serif;font-size:.84rem;color:var(--ink-faint)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px}
+.sheet{background:var(--sheet);border:1px solid #D3DBCB;box-shadow:var(--sheet-shadow);
+  padding:9px 9px 0;display:flex;flex-direction:column;cursor:pointer;
+  text-align:left;font:inherit;color:inherit;width:100%}
+.sheet .frame{aspect-ratio:4/5;background:#EDF1E8;border:1px solid #E0E6D9;
+  overflow:hidden;display:flex;align-items:center;justify-content:center}
+.sheet .frame img{width:100%;height:100%;object-fit:cover;display:block}
+.sheet .hint{font-size:.8rem;font-style:italic;color:var(--ink-faint);
+  padding:12px;text-align:center;line-height:1.4}
+.label{padding:9px 1px 11px}
+.label .meta{display:flex;justify-content:space-between;
+  font-family:"Archivo Narrow",Arial,sans-serif;font-size:.76rem;
+  color:var(--ink-faint);margin-bottom:2px}
+.label .acc{color:var(--stamp)}
+.label .name{font-size:1rem;line-height:1.25}
+.sheet.partial{border-color:#D8C9A8}
+.sheet.empty{box-shadow:none;border-style:dashed;border-color:#C3CDBA;background:#F1F4ED}
+.sheet.empty .name{color:var(--ink-faint)}
+
+.overlay{position:fixed;inset:0;background:rgba(24,33,27,.72);display:none;
+  align-items:center;justify-content:center;padding:20px;z-index:50}
+.overlay.open{display:flex}
+.panel{background:var(--sheet);max-width:940px;width:100%;max-height:93vh;
+  overflow:auto;padding:24px;position:relative;display:grid;gap:24px;
+  grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)}
+
+.drop{border:1px dashed var(--ink-faint);background:#EDF1E8;aspect-ratio:4/5;
+  display:flex;align-items:center;justify-content:center;position:relative;
+  cursor:pointer;overflow:hidden;text-align:center}
+.drop.over{border-color:var(--stamp);background:#E6E2EE}
+.drop img{width:100%;height:100%;object-fit:cover;display:block}
+.drop .msg{padding:20px;font-size:.9rem;color:var(--ink-soft);font-style:italic}
+.drop-actions{display:flex;gap:8px;margin-top:10px}
+
+label.fld{display:block;font-family:"Archivo Narrow",Arial,sans-serif;
+  font-size:.85rem;color:var(--ink-soft);margin:0 0 5px}
+input[type=text],textarea{width:100%;font-family:"Spectral",Georgia,serif;
+  font-weight:300;font-size:1rem;color:var(--ink);background:#fff;
+  border:1px solid var(--rule);border-radius:2px;padding:9px 10px;line-height:1.55}
+textarea{min-height:210px;resize:vertical}
+.field{margin-bottom:16px}
+
+.acc-line{font-family:"Archivo Narrow",Arial,sans-serif;font-size:.82rem;
+  color:var(--stamp);margin:0 0 2px}
+.unit-line{font-family:"Archivo Narrow",Arial,sans-serif;font-size:.85rem;
+  color:var(--ink-faint);margin:0 0 14px}
+.hint-line{font-size:.88rem;font-style:italic;color:var(--ink-faint);margin:0 0 16px}
+.meter{font-family:"Archivo Narrow",Arial,sans-serif;font-size:.83rem;
+  color:var(--ink-faint);margin-top:6px}
+.meter.short{color:var(--warn)}
+.meter.ok{color:var(--stamp)}
+
+.panel-nav{display:flex;gap:8px;justify-content:space-between;
+  border-top:1px solid var(--rule);padding-top:14px;margin-top:4px}
+.close{position:absolute;top:10px;right:12px;background:transparent;border:0;
+  font-size:1.6rem;line-height:1;color:var(--ink-soft);cursor:pointer;padding:4px 8px}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+  background:var(--ink);color:var(--sheet);padding:10px 18px;border-radius:2px;
+  font-family:"Archivo Narrow",Arial,sans-serif;font-size:.9rem;
+  opacity:0;pointer-events:none;transition:opacity .18s;z-index:80;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+
+@media (max-width:760px){
+  .panel{grid-template-columns:1fr;padding:18px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+  .bar h1{flex-basis:100%}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="bar-in">
+    <h1>Scavenger hunt editor</h1>
+    <span class="count" id="count">—</span>
+    <button id="btnMeta">Name &amp; identifier</button>
+    <button id="btnBackup">Save backup</button>
+    <button id="btnRestore">Load backup</button>
+    <button class="primary" id="btnExport">Export site</button>
+  </div>
+</div>
+
+<p class="note">
+  Your work saves in this browser as you type. It is not on the internet yet.
+  Use <em>Export site</em> to get the files you upload to GitHub, and
+  <em>Save backup</em> at the end of each session.
+</p>
+
+<div class="fail" id="fail"></div>
+
+<main id="main"></main>
+
+<div class="overlay" id="overlay" role="dialog" aria-modal="true">
+  <div class="panel" id="panel"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="filePick" accept="image/*" hidden>
+<input type="file" id="jsonPick" accept="application/json,.json" hidden>
+
+<!-- The viewer page, carried inside this file so export always works -->
+<script type="text/plain" id="viewerTpl"><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Biology Term Scavenger Hunt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@400;600&family=Spectral:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#DCE3D5;
+  --sheet:#FAFBF7;
+  --ink:#1C2620;
+  --ink-soft:#5D6A59;
+  --ink-faint:#93A08D;
+  --rule:#BCC7B3;
+  --stamp:#6A4A87;
+  --sheet-shadow:0 1px 0 #C6D0BD, 0 10px 22px -14px rgba(28,38,32,.5);
+}
+
+*{box-sizing:border-box}
+
+html{-webkit-text-size-adjust:100%}
+
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"Spectral",Georgia,serif;
+  font-weight:300;
+  line-height:1.6;
+}
+
+/* ---------- masthead ---------- */
+
+.masthead{
+  max-width:1180px;
+  margin:0 auto;
+  padding:64px 28px 30px;
+}
+
+.masthead h1{
+  font-size:clamp(2rem,5.2vw,3.4rem);
+  font-weight:400;
+  letter-spacing:-.015em;
+  line-height:1.08;
+  margin:0 0 6px;
+}
+
+.byline{
+  font-family:"Archivo Narrow",Arial,sans-serif;
+  font-size:.94rem;
+  color:var(--ink-soft);
+  margin:0;
+}
+
+.byline em{color:var(--ink);font-style:normal}
+
+/* 50 ticks = the actual collection, one mark per term */
+.tally{
+  display:flex;
+  gap:3px;
+  margin:30px 0 10px;
+  height:22px;
+  align-items:flex-end;
+}
+
+.tick{
+  flex:1;
+  background:var(--rule);
+  height:9px;
+  border-radius:1px;
+}
+
+.tick.filled{background:var(--stamp);height:22px}
+
+.tally-note{
+  font-family:"Archivo Narrow",Arial,sans-serif;
+  font-size:.9rem;
+  color:var(--ink-soft);
+  margin:0;
+}
+
+/* ---------- filter ---------- */
+
+.filters{
+  max-width:1180px;
+  margin:0 auto;
+  padding:10px 28px 0;
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  border-top:1px solid var(--rule);
+  padding-top:22px;
+}
+
+.filters button{
+  font-family:"Archivo Narrow",Arial,sans-serif;
+  font-size:.9rem;
+  color:var(--ink-soft);
+  background:transparent;
+  border:1px solid var(--rule);
+  border-radius:2px;
+  padding:5px 11px;
+  cursor:pointer;
+}
+
+.filters button:hover{color:var(--ink);border-color:var(--ink-faint)}
+
+.filters button[aria-pressed="true"]{
+  background:var(--ink);
+  border-color:var(--ink);
+  color:var(--sheet);
+}
+
+.filters button:focus-visible,
+.sheet:focus-visible,
+.close:focus-visible{outline:2px solid var(--stamp);outline-offset:2px}
+
+/* ---------- grid ---------- */
+
+main{max-width:1180px;margin:0 auto;padding:34px 28px 90px}
+
+.unit-head{
+  display:flex;
+  align-items:baseline;
+  gap:12px;
+  margin:44px 0 16px;
+}
+
+.unit-head:first-child{margin-top:0}
+
+.unit-head h2{
+  font-size:1.28rem;
+  font-weight:400;
+  margin:0;
+  white-space:nowrap;
+}
+
+.unit-head .line{flex:1;height:1px;background:var(--rule)}
+
+.unit-head .n{
+  font-family:"Archivo Narrow",Arial,sans-serif;
+  font-size:.86rem;
+  color:var(--ink-faint);
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(215px,1fr));
+  gap:20px;
+}
+
+.sheet{
+  background:var(--sheet);
+  border:1px solid #D3DBCB;
+  box-shadow:var(--sheet-shadow);
+  padding:11px 11px 0;
+  display:flex;
+  flex-direction:column;
+  cursor:pointer;
+  text-align:left;
+  font:inherit;
+  color:inherit;
+  width:100%;
+}
+
+.sheet .frame{
+  aspect-ratio:4/5;
+  background:#EDF1E8;
+  border:1px solid #E0E6D9;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.sheet .frame img{width:100%;height:100%;object-fit:cover;display:block}
+
+.sheet .hint{
+  font-size:.83rem;
+  font-style:italic;
+  color:var(--ink-faint);
+  padding:14px;
+  text-align:center;
+  line-height:1.45;
+}
+
+/* label block, bottom of the sheet — as on a real specimen sheet */
+.label{padding:11px 1px 13px}
+
+.label .meta{
+  display:flex;
+  justify-content:space-between;
+  font-family:"Archivo Narrow",Arial,sans-serif;
+  font-size:.78rem;
+  color:var(--ink-faint);
+  margin-bottom:3px;
+}
+
+.label .acc{color:var(--stamp)}
+
+.label .name{font-size:1.06rem;line-height:1.25}
+
+.sheet.empty{box-shadow:none;border-style:dashed;border-color:#C3CDBA;background:#F1F4ED}
+.sheet.empty .name{color:var(--ink-faint)}
+
+/* ---------- detail ---------- */
+
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(24,33,27,.72);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:22px;
+  z-index:50;
+}
+
+.overlay.open{display:flex}
+
+.detail{
+  background:var(--sheet);
+  max-width:900px;
+  width:100%;
+  max-height:92vh;
+  overflow:auto;
+  padding:26px;
+  position:relative;
+  display:grid;
+  gap:26px;
+  grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);
+}
+
+.detail .frame{background:#EDF1E8;border:1px solid #E0E6D9;min-height:220px}
+.detail .frame img{width:100%;display:block}
+
+.detail .acc{
+  font-family:"Archivo Narrow",Arial,sans-serif;
+  font-size:.82rem;
+  color:var(--stamp);
+  margin:0 0 2px;
+}
+
+.detail .unit{
+  font-family:"Archivo Narrow",Arial,sans-serif;
+  font-size:.86rem;
+  color:var(--ink-faint);
+  margin:0 0 14px;
+}
+
+.detail h3{
+  font-size:1.85rem;
+  font-weight:400;
+  margin:0 0 16px;
+  line-height:1.15;
+}
+
+.detail p.caption{margin:0;font-size:1.03rem;max-width:60ch}
+
+.detail p.todo{margin:0;color:var(--ink-faint);font-style:italic}
+
+.close{
+  position:absolute;
+  top:12px;
+  right:14px;
+  background:transparent;
+  border:0;
+  font-size:1.6rem;
+  line-height:1;
+  color:var(--ink-soft);
+  cursor:pointer;
+  padding:4px 8px;
+}
+
+@media (max-width:720px){
+  .masthead{padding-top:40px}
+  .detail{grid-template-columns:1fr;padding:20px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+  .tally{gap:2px}
+}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <h1>Biology Term Scavenger Hunt</h1>
+  <p class="byline" id="byline"></p>
+  <div class="tally" id="tally" aria-hidden="true"></div>
+  <p class="tally-note" id="tallyNote"></p>
+</header>
+
+<nav class="filters" id="filters" aria-label="Filter by unit"></nav>
+
+<main id="main"></main>
+
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="detailName">
+  <div class="detail" id="detail">
+    <button class="close" id="close" aria-label="Close">&times;</button>
+  </div>
+</div>
+
+<script src="terms.js"><\/script>
+<script>
+(function(){
+  var terms = COLLECTION.terms;
+  var filter = 0;
+
+  terms.forEach(function(t,i){ t.acc = String(i+1).padStart(2,"0"); });
+
+  function done(t){ return t.caption.trim() !== "" && t.image.trim() !== ""; }
+
+  function esc(s){
+    return String(s).replace(/[&<>"]/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];
+    });
+  }
+
+  function para(s){
+    return esc(s).replace(/\n{2,}/g, "</p><p class=\"caption\">").replace(/\n/g, "<br>");
+  }
+
+  /* masthead */
+  document.getElementById("byline").innerHTML =
+    "Collected by <em>" + COLLECTION.student + "</em> &nbsp;·&nbsp; identifier in every frame: " +
+    COLLECTION.identifier;
+
+  function drawTally(){
+    var n = terms.filter(done).length;
+    document.getElementById("tally").innerHTML =
+      terms.map(function(t){ return '<span class="tick' + (done(t) ? " filled" : "") + '"></span>'; }).join("");
+    document.getElementById("tallyNote").textContent =
+      n + " of " + terms.length + " mounted";
+  }
+
+  /* filters */
+  var units = [0].concat(Object.keys(UNIT_NAMES).map(Number));
+  document.getElementById("filters").innerHTML = units.map(function(u){
+    return '<button data-u="' + u + '" aria-pressed="' + (u === 0) + '">' +
+      (u === 0 ? "All 50" : "Unit " + u) + "</button>";
+  }).join("");
+
+  document.getElementById("filters").addEventListener("click", function(e){
+    var b = e.target.closest("button");
+    if(!b) return;
+    filter = Number(b.dataset.u);
+    [].forEach.call(this.querySelectorAll("button"), function(x){
+      x.setAttribute("aria-pressed", Number(x.dataset.u) === filter);
+    });
+    render();
+  });
+
+  /* grid */
+  function sheetHTML(t,i){
+    var body = t.image
+      ? '<img src="images/' + encodeURIComponent(t.image) + '" alt="' + esc(t.term) + ' specimen" loading="lazy">'
+      : '<span class="hint">' + esc(t.hint || "not collected yet") + "</span>";
+    return '<button class="sheet' + (done(t) ? "" : " empty") + '" data-i="' + i + '">' +
+      '<span class="frame">' + body + "</span>" +
+      '<span class="label">' +
+        '<span class="meta"><span class="acc">' + t.acc + "</span><span>Unit " + t.unit + "</span></span>" +
+        '<span class="name">' + esc(t.term) + "</span>" +
+      "</span></button>";
+  }
+
+  function render(){
+    var shown = units.slice(1).filter(function(u){ return filter === 0 || filter === u; });
+    document.getElementById("main").innerHTML = shown.map(function(u){
+      var list = terms.map(function(t,i){ return {t:t,i:i}; })
+                      .filter(function(x){ return x.t.unit === u; });
+      if(!list.length) return "";
+      var n = list.filter(function(x){ return done(x.t); }).length;
+      return '<section><div class="unit-head"><h2>' + UNIT_NAMES[u] + "</h2>" +
+        '<span class="line"></span><span class="n">' + n + " / " + list.length + "</span></div>" +
+        '<div class="grid">' + list.map(function(x){ return sheetHTML(x.t, x.i); }).join("") +
+        "</div></section>";
+    }).join("");
+    drawTally();
+  }
+
+  /* detail */
+  var overlay = document.getElementById("overlay");
+  var detail  = document.getElementById("detail");
+  var closeBtn = document.getElementById("close");
+  var lastFocus = null;
+
+  document.getElementById("main").addEventListener("click", function(e){
+    var s = e.target.closest(".sheet");
+    if(!s) return;
+    open(terms[Number(s.dataset.i)], s);
+  });
+
+  function open(t, src){
+    lastFocus = src;
+    var img = t.image
+      ? '<img src="images/' + encodeURIComponent(t.image) + '" alt="' + esc(t.term) + ' specimen">'
+      : "";
+    var cap = t.caption
+      ? '<p class="caption">' + para(t.caption) + "</p>"
+      : '<p class="todo">Caption not written yet.' +
+        (t.hint ? " Planned specimen: " + esc(t.hint) + "." : "") + "</p>";
+    detail.innerHTML =
+      '<button class="close" id="close" aria-label="Close">&times;</button>' +
+      '<div class="frame">' + img + "</div>" +
+      '<div><p class="acc">' + t.acc + '</p><p class="unit">Unit ' + t.unit + " · " + esc(UNIT_NAMES[t.unit]) +
+      '</p><h3 id="detailName">' + esc(t.term) + "</h3>" + cap + "</div>";
+    overlay.classList.add("open");
+    detail.querySelector(".close").addEventListener("click", close);
+    detail.querySelector(".close").focus();
+  }
+
+  function close(){
+    overlay.classList.remove("open");
+    if(lastFocus) lastFocus.focus();
+  }
+
+  overlay.addEventListener("click", function(e){ if(e.target === overlay) close(); });
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape") close(); });
+
+  render();
+})();
+<\/script>
+</body>
+</html>
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ---------- terms, embedded so this file stands alone ---------- */
+
+var UNIT_NAMES = {
+  1:"Chemistry of Life", 2:"Cell Structure and Function", 3:"Cellular Energetics",
+  4:"Cell Cycle", 5:"Heredity", 6:"Gene Expression", 7:"Natural Selection", 8:"Ecology"
+};
+
+var SEED = [
+  [1,"Polarity","Oil layered on water"],
+  [1,"Hydrogen bond","Ice cube floating"],
+  [1,"Adhesion","Meniscus curving up a glass"],
+  [1,"Cohesion","Water domed over an overfilled rim"],
+  [1,"Hydrophobic","Water beading on wax paper"],
+  [1,"Hydrophilic","Paper towel wicking, or sugar dissolving"],
+  [1,"Acid","White vinegar"],
+  [1,"Base","Baking soda"],
+  [1,"Carbohydrate","Dry flour, or sugar"],
+  [1,"Hydrolysis","Dry pasta beside soaked pasta"],
+  [1,"DNA / RNA","Strawberry DNA extraction"],
+  [1,"Lipids","Butter or olive oil"],
+  [1,"Protein","Gluten strands stretching from flour dough"],
+  [1,"Enzyme","Browned apple half"],
+  [1,"Inhibition","Vinegar-treated apple half, still pale"],
+  [2,"Prokaryotes","Yogurt with live active cultures"],
+  [2,"Eukaryotes","Mushroom"],
+  [2,"Phospholipid","Soap bubble"],
+  [2,"Diffusion","Food coloring spreading in still water"],
+  [2,"Osmosis","Gummy bear after soaking overnight"],
+  [2,"Hypertonic","Salted vegetable slices weeping water"],
+  [2,"Hypotonic","Swollen gummy bear beside a dry one"],
+  [3,"Photosynthesis","Sunlit leaves"],
+  [3,"Chlorophyll","Light moss beside dark moss on one trunk"],
+  [3,"Autotrophs","Any plant making its own food"],
+  [3,"Heterotrophs","Turkeys or squirrels feeding"],
+  [3,"C3 plant","Maple or oak"],
+  [3,"C4 plant","Crabgrass in the lawn"],
+  [3,"CAM plant","Sedum or jade on a porch"],
+  [3,"Fermentation","Yeast foaming in warm sugar water"],
+  [4,"Somatic","Skin, leaf tissue, any body cell"],
+  [4,"Gamete","Whole egg, or pollen on a flower"],
+  [4,"Reproduction","Sprouting potato, or seed head"],
+  [4,"Homologous","Structures sharing an origin"],
+  [5,"Alleles","Indian corn — every kernel a genotype"],
+  [5,"Laws of probability","Mixed bean bag, or a coin toss setup"],
+  [5,"X-linked","Calico cat"],
+  [5,"Polyploidy","Banana or strawberry"],
+  [6,"Virus","Mosaic-patterned or streaked leaf"],
+  [6,"Mutation","Four-leaf clover, or variegated leaf"],
+  [7,"Adaptation","Burrs, thorns, waxy leaf cuticle"],
+  [7,"Natural selection","Trait that clearly pays off in this habitat"],
+  [7,"Analogous","Dragonfly wing beside a bird feather"],
+  [7,"Species","Lichen — one name, two organisms"],
+  [8,"Population","One species, one place, counted"],
+  [8,"Dispersion","Turkey flock, clumped"],
+  [8,"Mutualism","Lichen on bark"],
+  [8,"Commensalism","Moss on a trunk"],
+  [8,"Parasitism","Powdery mildew, oak gall, or aphids"],
+  [8,"Predation","Spider web with prey"]
+];
+
+/* ---------- state ---------- */
+
+var KEY = "apbio-collection-v1";
+var data = null, cur = -1;
+
+function seed(){
+  return {
+    student:"YOUR NAME",
+    identifier:"describe your identifier here",
+    terms: SEED.map(function(r){
+      return {unit:r[0], term:r[1], hint:r[2], caption:"", img:""};
+    })
+  };
+}
+
+function load(){
+  try{
+    var raw = localStorage.getItem(KEY);
+    if(raw){
+      var p = JSON.parse(raw);
+      if(p && p.terms && p.terms.length) return p;
+    }
+  }catch(e){}
+  return seed();
+}
+
+var saveTimer=null, warned=false;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function(){
+    try{ localStorage.setItem(KEY, JSON.stringify(data)); warned=false; }
+    catch(e){
+      if(!warned){ warned=true;
+        toast("This browser's storage is full. Export a backup now, then remove a photo or two."); }
+    }
+  }, 250);
+}
+
+function toast(msg){
+  var el=document.getElementById("toast");
+  el.textContent=msg; el.classList.add("show");
+  clearTimeout(el._t);
+  el._t=setTimeout(function(){ el.classList.remove("show"); }, 3400);
+}
+
+function fail(html){
+  var el=document.getElementById("fail");
+  el.innerHTML=html; el.classList.add("show");
+}
+
+/* ---------- helpers ---------- */
+
+function acc(i){ return String(i+1).padStart(2,"0"); }
+function slug(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,""); }
+function esc(s){
+  return String(s).replace(/[&<>"]/g,function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];
+  });
+}
+function sentences(s){
+  var m=s.trim().match(/[^.!?]+[.!?]+/g);
+  return m ? m.length : (s.trim() ? 1 : 0);
+}
+function state(t){
+  if(t.img && t.caption.trim()) return "done";
+  if(t.img || t.caption.trim())  return "partial";
+  return "empty";
+}
+
+function readImage(file, cb){
+  var fr=new FileReader();
+  fr.onload=function(){
+    var im=new Image();
+    im.onload=function(){
+      var max=1400, w=im.width, h=im.height;
+      if(w>h && w>max){ h=Math.round(h*max/w); w=max; }
+      else if(h>=w && h>max){ w=Math.round(w*max/h); h=max; }
+      var c=document.createElement("canvas");
+      c.width=w; c.height=h;
+      c.getContext("2d").drawImage(im,0,0,w,h);
+      cb(c.toDataURL("image/jpeg",0.82));
+    };
+    im.onerror=function(){ toast("That file could not be read as an image."); };
+    im.src=fr.result;
+  };
+  fr.onerror=function(){ toast("Could not read that file."); };
+  fr.readAsDataURL(file);
+}
+
+/* ---------- grid ---------- */
+
+function render(){
+  var units=Object.keys(UNIT_NAMES).map(Number);
+  document.getElementById("main").innerHTML=units.map(function(u){
+    var list=data.terms.map(function(t,i){ return {t:t,i:i}; })
+                       .filter(function(x){ return x.t.unit===u; });
+    if(!list.length) return "";
+    var n=list.filter(function(x){ return state(x.t)==="done"; }).length;
+    return '<section><div class="unit-head"><h2>'+UNIT_NAMES[u]+'</h2>'+
+      '<span class="line"></span><span class="n">'+n+" / "+list.length+
+      '</span></div><div class="grid">'+
+      list.map(function(x){ return sheetHTML(x.t,x.i); }).join("")+
+      '</div></section>';
+  }).join("");
+  var done=data.terms.filter(function(t){ return state(t)==="done"; }).length;
+  document.getElementById("count").textContent=done+" of "+data.terms.length+" finished";
+}
+
+function sheetHTML(t,i){
+  var body=t.img ? '<img src="'+t.img+'" alt="">'
+                 : '<span class="hint">'+esc(t.hint||"no photo yet")+'</span>';
+  return '<button type="button" class="sheet '+state(t)+'" data-i="'+i+'">'+
+    '<span class="frame">'+body+'</span><span class="label">'+
+    '<span class="meta"><span class="acc">'+acc(i)+'</span><span>Unit '+t.unit+'</span></span>'+
+    '<span class="name">'+esc(t.term)+'</span></span></button>';
+}
+
+/* ---------- panel ---------- */
+
+var overlay=document.getElementById("overlay");
+var panel=document.getElementById("panel");
+var filePick=document.getElementById("filePick");
+
+document.getElementById("main").addEventListener("click",function(e){
+  var s=e.target.closest(".sheet");
+  if(s) openPanel(Number(s.dataset.i));
+});
+
+function openPanel(i){
+  cur=i;
+  var t=data.terms[i];
+  panel.innerHTML=
+    '<button type="button" class="close" id="pClose" aria-label="Close">&times;</button>'+
+    '<div><div class="drop" id="drop">'+
+      (t.img ? '<img src="'+t.img+'" alt="">'
+             : '<span class="msg">Drop a photo here, or tap to choose one</span>')+
+    '</div><div class="drop-actions">'+
+      '<button type="button" id="pPick">Choose photo</button>'+
+      (t.img ? '<button type="button" id="pClear">Remove photo</button>' : '')+
+    '</div></div>'+
+    '<div><p class="acc-line">'+acc(i)+'</p>'+
+      '<p class="unit-line">Unit '+t.unit+' · '+UNIT_NAMES[t.unit]+'</p>'+
+      '<div class="field"><label class="fld" for="pTerm">Term</label>'+
+        '<input type="text" id="pTerm" value="'+esc(t.term)+'"></div>'+
+      (t.hint ? '<p class="hint-line">Planned specimen: '+esc(t.hint)+'</p>' : '')+
+      '<div class="field"><label class="fld" for="pCap">Your caption</label>'+
+        '<textarea id="pCap" placeholder="Five sentences, in your own words.">'+esc(t.caption)+'</textarea>'+
+        '<div class="meter" id="pMeter"></div></div>'+
+      '<div class="panel-nav">'+
+        '<button type="button" id="pPrev">&larr; Previous</button>'+
+        '<button type="button" id="pNext">Next &rarr;</button>'+
+      '</div></div>';
+  overlay.classList.add("open");
+  wirePanel();
+  document.getElementById("pCap").focus();
+}
+
+function wirePanel(){
+  var t=data.terms[cur];
+  document.getElementById("pClose").onclick=closePanel;
+  document.getElementById("pPrev").onclick=function(){ step(-1); };
+  document.getElementById("pNext").onclick=function(){ step(1); };
+
+  var drop=document.getElementById("drop");
+  drop.onclick=pick;
+  document.getElementById("pPick").onclick=function(e){ e.stopPropagation(); pick(); };
+
+  var clr=document.getElementById("pClear");
+  if(clr) clr.onclick=function(e){
+    e.stopPropagation(); t.img=""; save(); render(); openPanel(cur);
+  };
+
+  ["dragenter","dragover"].forEach(function(ev){
+    drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.add("over"); });
+  });
+  ["dragleave","drop"].forEach(function(ev){
+    drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.remove("over"); });
+  });
+  drop.addEventListener("drop",function(e){
+    var f=e.dataTransfer.files && e.dataTransfer.files[0];
+    if(f) takeFile(f);
+  });
+
+  var cap=document.getElementById("pCap");
+  cap.oninput=function(){ t.caption=cap.value; meter(); save(); };
+  var term=document.getElementById("pTerm");
+  term.oninput=function(){ t.term=term.value; save(); };
+  meter();
+}
+
+function meter(){
+  var t=data.terms[cur], el=document.getElementById("pMeter");
+  if(!el) return;
+  var n=sentences(t.caption);
+  var w=t.caption.trim() ? t.caption.trim().split(/\s+/).length : 0;
+  el.textContent=n+(n===1?" sentence":" sentences")+" · "+w+" words";
+  el.className="meter "+(n===0?"":n<5?"short":"ok");
+}
+
+function pick(){ filePick.value=""; filePick.click(); }
+
+filePick.onchange=function(){
+  var f=filePick.files && filePick.files[0];
+  if(f) takeFile(f);
+};
+
+function takeFile(f){
+  if(!/^image\//.test(f.type)){ toast("That is not an image file."); return; }
+  readImage(f,function(url){
+    data.terms[cur].img=url;
+    save(); render(); openPanel(cur);
+    toast("Photo added.");
+  });
+}
+
+function step(d){
+  var n=cur+d;
+  if(n<0 || n>=data.terms.length) return;
+  openPanel(n);
+}
+
+function closePanel(){ overlay.classList.remove("open"); render(); }
+
+overlay.addEventListener("click",function(e){ if(e.target===overlay) closePanel(); });
+document.addEventListener("keydown",function(e){
+  if(!overlay.classList.contains("open")) return;
+  if(e.key==="Escape") closePanel();
+  var typing = e.target.tagName==="TEXTAREA" || e.target.tagName==="INPUT";
+  if(!typing && e.key==="ArrowLeft")  step(-1);
+  if(!typing && e.key==="ArrowRight") step(1);
+});
+
+/* ---------- name & identifier ---------- */
+
+document.getElementById("btnMeta").onclick=function(){
+  var s=prompt("Your name:",data.student);
+  if(s!==null && s.trim()) data.student=s.trim();
+  var d=prompt("Your identifier (the object in every photo):",data.identifier);
+  if(d!==null && d.trim()) data.identifier=d.trim();
+  save(); toast("Saved.");
+};
+
+/* ---------- backup ---------- */
+
+function download(blob,name){
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },5000);
+}
+
+document.getElementById("btnBackup").onclick=function(){
+  download(new Blob([JSON.stringify(data)],{type:"application/json"}),
+           "scavenger-hunt-backup.json");
+  toast("Backup downloaded.");
+};
+
+document.getElementById("btnRestore").onclick=function(){
+  document.getElementById("jsonPick").click();
+};
+
+document.getElementById("jsonPick").onchange=function(){
+  var f=this.files && this.files[0];
+  if(!f) return;
+  var fr=new FileReader();
+  fr.onload=function(){
+    try{
+      var p=JSON.parse(fr.result);
+      if(!p.terms || !p.terms.length) throw 0;
+      data=p; save(); render();
+      toast("Backup loaded.");
+    }catch(e){ toast("That file isn't a valid backup."); }
+  };
+  fr.readAsText(f);
+};
+
+/* ---------- export ---------- */
+
+function buildTermsJs(){
+  var lines=data.terms.map(function(t,i){
+    var name = t.img ? acc(i)+"-"+(slug(t.term)||"specimen")+".jpg" : "";
+    return "    { unit: "+t.unit+
+      ", term: "+JSON.stringify(t.term)+
+      ", image: "+JSON.stringify(name)+
+      ", caption: "+JSON.stringify(t.caption)+
+      ", hint: "+JSON.stringify(t.hint||"")+" }";
+  });
+  return "/* Generated by the editor. Re-export to update. */\n\n"+
+    "const COLLECTION = {\n"+
+    "  student: "+JSON.stringify(data.student)+",\n"+
+    "  identifier: "+JSON.stringify(data.identifier)+",\n\n"+
+    "  terms: [\n"+lines.join(",\n")+"\n  ]\n};\n\n"+
+    "const UNIT_NAMES = "+JSON.stringify(UNIT_NAMES,null,2)+";\n";
+}
+
+function viewerHtml(){
+  var raw=document.getElementById("viewerTpl").textContent;
+  return raw.replace(/<\\\/script>/g,"<\/script>");
+}
+
+document.getElementById("btnExport").onclick=function(){
+  var withPhotos=data.terms.filter(function(t){ return t.img; }).length;
+
+  if(typeof JSZip==="undefined"){
+    download(new Blob([buildTermsJs()],{type:"text/javascript"}),"terms.js");
+    download(new Blob([viewerHtml()],{type:"text/html"}),"index.html");
+    toast("Zip library blocked. Downloaded terms.js and index.html — photos must be saved manually.");
+    return;
+  }
+
+  var zip=new JSZip();
+  var imgs=zip.folder("images");
+
+  data.terms.forEach(function(t,i){
+    if(!t.img) return;
+    imgs.file(acc(i)+"-"+(slug(t.term)||"specimen")+".jpg",
+              t.img.split(",")[1],{base64:true});
+  });
+  if(!withPhotos) imgs.file(".gitkeep","");
+
+  zip.file("terms.js",buildTermsJs());
+  zip.file("index.html",viewerHtml());
+
+  zip.generateAsync({type:"blob"}).then(function(blob){
+    download(blob,"apbio-site.zip");
+    toast(withPhotos+" photo"+(withPhotos===1?"":"s")+" exported. Unzip and upload the contents.");
+  }).catch(function(){
+    toast("Export failed. Save a backup instead and tell me what happened.");
+  });
+};
+
+/* ---------- go ---------- */
+
+function storageWorks(){
+  try{
+    localStorage.setItem("__probe__","1");
+    localStorage.removeItem("__probe__");
+    return true;
+  }catch(e){ return false; }
+}
+
+try{
+  data=load();
+  render();
+  if(!storageWorks()){
+    fail("<strong>This browser will not save your work here.</strong><br>"+
+         "You can still type and add photos, but everything is lost when you close the tab. "+
+         "Either turn off private browsing, or upload this file to GitHub and use it from your "+
+         "<code>github.io</code> address instead. Export a backup before you close the tab.");
+  }
+}catch(e){
+  fail("<strong>The editor could not start.</strong><br>"+
+       "Error: <code>"+esc(e.message||String(e))+"</code><br>"+
+       "Open this file directly in Chrome or Safari, not inside another app.");
+}
+
+})();
+</script>
+</body>
+</html>
